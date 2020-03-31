@@ -57,11 +57,6 @@ The code generator needs to be run for each OCP release in order to be supported
 
 #### Resource manifests
 
-Due to the architecture of k8c the [cluster version operator][cluster-version-operator] cannot be used out-of-the-box, the main reasons are:
-
-- In k8c the control plane components run in a dedicated namespace in a seed cluster, and not in the master nodes
-- Some sidecar containers are needed to ensure communication from control plane to the workers (e.g. apiserver -> kubelet)
-
 The approach that has been taken so far is simply to define the resource manifests programmaticaly (same approach used for k8s).
 See the [openshift controller][k8c-openshift-controller] for more details.
 
@@ -106,7 +101,7 @@ service-catalog-controller-manager
 storage
 ```
 
-This means that some OCP features are not available or broken, and that the burden of aligning the manifests for each version we support is on our side.
+This means that some OCP features are not available or broken, and that we have the burden of aligning the manifests for each version we support.
 
 Note that using some of the operators is simply not possible due to the k8c architecture (e.g. kube-apiserver, kube-scheckuler, kube-controller-manager).
 
@@ -135,9 +130,15 @@ There are some criticities that make current integration not fully working and h
 
 ### Resource manifests reconciliation
 
-#### Solution 1: Deploying the `cluster-version-operator`
+#### Deploying the `cluster-version-operator`
 
 Deploying the `cluster-version-operator` in the seed cluster using the seed-cluster-controller would avoid creating manually the cluster operators and their dependencies.
+
+Unfortunately due to the k8c architecture the [cluster version operator][cluster-version-operator] cannot be used out-of-the-box, the main reasons are:
+
+- In k8c the control plane components run in a dedicated namespace in a seed cluster, and not in the master nodes
+- Some sidecar containers are needed to ensure communication from control plane to the workers (e.g. apiserver -> kubelet)
+
 
 Pros:
 
@@ -146,10 +147,8 @@ Pros:
 
 Cons:
 
-- To be checked if this is feasible without patching it to skip some manifests that should not be applied in k8c (e.g. `kubeapiserver-operator`) and handled, that would imply additional maintenance costs.
-    by the `seed-cluster-controller` #TODO(irozzo) How to do this??
-- All operators run in the worker nodes, we need some to be tagged as `master`
-    to be able to schedule them (currently handled by a usercluster [controller][k8c-node-labeler])
+- To be checked how to skip the manifests that should not be applied in k8c (e.g. `kubeapiserver-operator`). Worst case scenario would be patching the operator itself. #TODO(irozzo) How to do this??
+- All operators run in the worker nodes, we need some to be tagged as `master` to be able to schedule them (currently handled by a usercluster [controller][k8c-node-labeler]) or having a mandatory dedicated `machinedeployment`.
 - How to handle update of resources running on seed-cluster (e.g. apiserver, openshift apiserver, controller manager)?
 
 ### Machine handling
