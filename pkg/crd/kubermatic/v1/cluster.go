@@ -444,10 +444,12 @@ type VSphereCredentials struct {
 type VSphereCloudSpec struct {
 	CredentialsReference *providerconfig.GlobalSecretKeySelector `json:"credentialsReference,omitempty"`
 
-	Username  string `json:"username,omitempty"`
-	Password  string `json:"password,omitempty"`
-	VMNetName string `json:"vmNetName"`
-	Folder    string `json:"folder,omitempty"`
+	Username         string `json:"username,omitempty"`
+	Password         string `json:"password,omitempty"`
+	VMNetName        string `json:"vmNetName"`
+	Folder           string `json:"folder,omitempty"`
+	Datastore        string `json:"datastore"`
+	DatastoreCluster string `json:"datastoreCluster"`
 
 	// This user will be used for everything except cloud provider functionality
 	InfraManagementUser VSphereCredentials `json:"infraManagementUser"`

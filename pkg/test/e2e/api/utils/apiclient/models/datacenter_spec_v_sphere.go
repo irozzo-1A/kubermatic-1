@@ -25,8 +25,8 @@ type DatacenterSpecVSphere struct {
 	// The name of the datacenter to use.
 	Datacenter string `json:"datacenter,omitempty"`
 
-	// The name of the datastore to use.
-	Datastore string `json:"datastore,omitempty"`
+	// The name of the default datastore to use.
+	DefaultDatastore string `json:"default_datastore,omitempty"`
 
 	// Endpoint URL to use, including protocol, for example "https://vcenter.example.com".
 	Endpoint string `json:"endpoint,omitempty"`

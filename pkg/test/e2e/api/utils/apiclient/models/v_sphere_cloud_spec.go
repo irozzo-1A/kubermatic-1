@@ -16,6 +16,12 @@ import (
 // swagger:model VSphereCloudSpec
 type VSphereCloudSpec struct {
 
+	// datastore
+	Datastore string `json:"datastore,omitempty"`
+
+	// datastore cluster
+	DatastoreCluster string `json:"datastoreCluster,omitempty"`
+
 	// folder
 	Folder string `json:"folder,omitempty"`
 

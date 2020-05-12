@@ -10110,10 +10110,10 @@
           "type": "string",
           "x-go-name": "Datacenter"
         },
-        "datastore": {
-          "description": "The name of the datastore to use.",
+        "default_datastore": {
+          "description": "The name of the default datastore to use.",
           "type": "string",
-          "x-go-name": "Datastore"
+          "x-go-name": "DefaultDatastore"
         },
         "endpoint": {
           "description": "Endpoint URL to use, including protocol, for example \"https://vcenter.example.com\".",
@@ -12909,6 +12909,14 @@
       "properties": {
         "credentialsReference": {
           "$ref": "#/definitions/GlobalSecretKeySelector"
+        },
+        "datastore": {
+          "type": "string",
+          "x-go-name": "Datastore"
+        },
+        "datastoreCluster": {
+          "type": "string",
+          "x-go-name": "DatastoreCluster"
         },
         "folder": {
           "type": "string",
