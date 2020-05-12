@@ -65,8 +65,7 @@ elif [[ $provider == "openstack" ]]; then
     -openstack-password=${OS_PASSWORD}"
 elif [[ $provider == "vsphere" ]]; then
   EXTRA_ARGS="-vsphere-username=${VSPHERE_E2E_USERNAME}
-    -vsphere-password=${VSPHERE_E2E_PASSWORD}
-    -vsphere-datastore-cluster=dsc-1"
+    -vsphere-password=${VSPHERE_E2E_PASSWORD}"
 elif [[ $provider == "kubevirt" ]]; then
   EXTRA_ARGS="-kubevirt-kubeconfig=${KUBEVIRT_E2E_TESTS_KUBECONFIG}"
 elif [[ $provider == "alibaba" ]]; then

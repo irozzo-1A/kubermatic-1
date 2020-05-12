@@ -129,10 +129,8 @@ type secrets struct {
 		Password string
 	}
 	VSphere struct {
-		Username         string
-		Password         string
-		Datastore        string
-		DatastoreCluster string
+		Username string
+		Password string
 	}
 	Packet struct {
 		APIKey    string
@@ -231,8 +229,6 @@ func main() {
 	flag.StringVar(&opts.secrets.OpenStack.Password, "openstack-password", "", "OpenStack: Password")
 	flag.StringVar(&opts.secrets.VSphere.Username, "vsphere-username", "", "vSphere: Username")
 	flag.StringVar(&opts.secrets.VSphere.Password, "vsphere-password", "", "vSphere: Password")
-	flag.StringVar(&opts.secrets.VSphere.Datastore, "vsphere-datastore", "", "vSphere: Datastore")
-	flag.StringVar(&opts.secrets.VSphere.DatastoreCluster, "vsphere-datastore-cluster", "", "vSphere: Datastore Cluster")
 	flag.StringVar(&opts.secrets.Azure.ClientID, "azure-client-id", "", "Azure: ClientID")
 	flag.StringVar(&opts.secrets.Azure.ClientSecret, "azure-client-secret", "", "Azure: ClientSecret")
 	flag.StringVar(&opts.secrets.Azure.TenantID, "azure-tenant-id", "", "Azure: TenantID")
