@@ -10110,8 +10110,8 @@
           "type": "string",
           "x-go-name": "Datacenter"
         },
-        "default_datastore": {
-          "description": "The name of the default datastore to use.",
+        "datastore": {
+          "description": "The name of the default datastore to use for provisioning volumes using\nstorage classes/dynamic provisioning and for server placement in case no\n`Datastore` or `DatastoreCluster` is provided with `VSphereCloudSpec`.",
           "type": "string",
           "x-go-name": "DefaultDatastore"
         },
@@ -12911,14 +12911,17 @@
           "$ref": "#/definitions/GlobalSecretKeySelector"
         },
         "datastore": {
+          "description": "Datastore is used for storing virtual machines, it is mutually exclusive\nwith DatastoreCluster.\n+optional",
           "type": "string",
           "x-go-name": "Datastore"
         },
         "datastoreCluster": {
+          "description": "DatastoreCluster is used for determining the datastore for virtual\nmachine file placement, it is mutually exclusive with Datastore.\n+optional",
           "type": "string",
           "x-go-name": "DatastoreCluster"
         },
         "folder": {
+          "description": "Folder is the folder used to store the provisioned objects.\n+optional",
           "type": "string",
           "x-go-name": "Folder"
         },
@@ -12926,14 +12929,17 @@
           "$ref": "#/definitions/VSphereCredentials"
         },
         "password": {
+          "description": "Password is the vSphere user name.\n+optional",
           "type": "string",
           "x-go-name": "Password"
         },
         "username": {
+          "description": "Username is the vSphere user name.\n+optional",
           "type": "string",
           "x-go-name": "Username"
         },
         "vmNetName": {
+          "description": "VMNetName is the name of the vSphere network.",
           "type": "string",
           "x-go-name": "VMNetName"
         }

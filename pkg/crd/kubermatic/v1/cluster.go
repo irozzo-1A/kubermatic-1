@@ -444,11 +444,28 @@ type VSphereCredentials struct {
 type VSphereCloudSpec struct {
 	CredentialsReference *providerconfig.GlobalSecretKeySelector `json:"credentialsReference,omitempty"`
 
-	Username         string `json:"username,omitempty"`
-	Password         string `json:"password,omitempty"`
-	VMNetName        string `json:"vmNetName"`
-	Folder           string `json:"folder,omitempty"`
-	Datastore        string `json:"datastore"`
+	// Username is the vSphere user name.
+	// +optional
+	Username string `json:"username"`
+	// Password is the vSphere user name.
+	// +optional
+	Password string `json:"password"`
+	// VMNetName is the name of the vSphere network.
+	VMNetName string `json:"vmNetName"`
+	// Folder is the folder used to store the provisioned objects.
+	// +optional
+	Folder string `json:"folder"`
+	// If both Datastore and DatastoreCluster are not specified the virtual
+	// machines are stored in the `DefaultDatastore` specified in the
+	// Datacenter.
+
+	// Datastore is used for storing virtual machines, it is mutually exclusive
+	// with DatastoreCluster.
+	// +optional
+	Datastore string `json:"datastore"`
+	// DatastoreCluster is used for determining the datastore for virtual
+	// machine file placement, it is mutually exclusive with Datastore.
+	// +optional
 	DatastoreCluster string `json:"datastoreCluster"`
 
 	// This user will be used for everything except cloud provider functionality

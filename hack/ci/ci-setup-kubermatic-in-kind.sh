@@ -571,7 +571,7 @@ spec:
         vsphere:
           endpoint: "https://vcenter.loodse.io"
           datacenter: "dc-1"
-          default_datastore: "exsi-nas"
+          datastore: "exsi-nas"
           cluster: "cl-1"
           root_path: "/dc-1/vm/e2e-tests"
           templates:

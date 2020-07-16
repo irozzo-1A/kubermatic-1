@@ -229,8 +229,10 @@ type DatacenterSpecVSphere struct {
 	Endpoint string `json:"endpoint"`
 	// If set to true, disables the TLS certificate check against the endpoint.
 	AllowInsecure bool `json:"allow_insecure"`
-	// The name of the default datastore to use.
-	DefaultDatastore string `json:"default_datastore"`
+	// The name of the default datastore to use for provisioning volumes using
+	// storage classes/dynamic provisioning and for server placement in case no
+	// `Datastore` or `DatastoreCluster` is provided with `VSphereCloudSpec`.
+	DefaultDatastore string `json:"datastore"`
 	// The name of the datacenter to use.
 	Datacenter string `json:"datacenter"`
 	// The name of the Kubernetes cluster to use.

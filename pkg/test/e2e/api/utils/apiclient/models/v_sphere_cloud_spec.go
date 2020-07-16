@@ -16,22 +16,29 @@ import (
 // swagger:model VSphereCloudSpec
 type VSphereCloudSpec struct {
 
-	// datastore
+	// Datastore is used for storing virtual machines, it is mutually exclusive
+	// with DatastoreCluster.
+	// +optional
 	Datastore string `json:"datastore,omitempty"`
 
-	// datastore cluster
+	// DatastoreCluster is used for determining the datastore for virtual
+	// machine file placement, it is mutually exclusive with Datastore.
+	// +optional
 	DatastoreCluster string `json:"datastoreCluster,omitempty"`
 
-	// folder
+	// Folder is the folder used to store the provisioned objects.
+	// +optional
 	Folder string `json:"folder,omitempty"`
 
-	// password
+	// Password is the vSphere user name.
+	// +optional
 	Password string `json:"password,omitempty"`
 
-	// username
+	// Username is the vSphere user name.
+	// +optional
 	Username string `json:"username,omitempty"`
 
-	// VM net name
+	// VMNetName is the name of the vSphere network.
 	VMNetName string `json:"vmNetName,omitempty"`
 
 	// credentials reference
