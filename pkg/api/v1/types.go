@@ -694,7 +694,7 @@ type ClusterSpec struct {
 	// Openshift holds all openshift-specific settings
 	Openshift *kubermaticv1.Openshift `json:"openshift,omitempty"`
 
-	// OPAIntegration is a preview feature that enables OPA integration with Kubermatic for the cluster.
+	// OPAIntegration is a preview feature that enables OPA integration with KKP for the cluster.
 	// Enabling it causes gatekeeper and its resources to be deployed on the user cluster.
 	// By default it is disabled.
 	OPAIntegration *kubermaticv1.OPAIntegrationSettings `json:"opaIntegration,omitempty"`
@@ -1396,10 +1396,10 @@ type ObjectReferenceResource struct {
 	Name string `json:"name,omitempty"`
 }
 
-// KubermaticVersions describes the versions of running Kubermatic components.
+// KubermaticVersions describes the versions of running KKP components.
 // swagger:model KubermaticVersions
 type KubermaticVersions struct {
-	// Version of the Kubermatic API server.
+	// Version of the KKP API server.
 	API string `json:"api"`
 }
 
@@ -1534,10 +1534,11 @@ type Seed struct {
 // The spec for a seed data
 type SeedSpec struct {
 	// Optional: Country of the seed as ISO-3166 two-letter code, e.g. DE or UK.
-	// For informational purposes in the Kubermatic dashboard only.
+	// For informational purposes in the Kubermatic Kubernetes Platform (KKP)
+	// dashboard only.
 	Country string `json:"country,omitempty"`
 	// Optional: Detailed location of the cluster, like "Hamburg" or "Datacenter 7".
-	// For informational purposes in the Kubermatic dashboard only.
+	// For informational purposes in the KKP dashboard only.
 	Location string `json:"location,omitempty"`
 	// A reference to the Kubeconfig of this cluster. The Kubeconfig must
 	// have cluster-admin privileges. This field is mandatory for every
