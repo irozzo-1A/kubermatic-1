@@ -76,7 +76,6 @@ if ! curl --head --silent --fail "${URL}" > /dev/null; then
 fi
 
 echodate "Downloading and extracting gocache"
-TEST_NAME="Download and extract gocache"
 # Passing the Headers as space-separated literals doesn't seem to work
 # in conjunction with the retry func, so we just put them in a file instead
 echo 'Content-Type: application/octet-stream' > /tmp/headers
