@@ -61,6 +61,7 @@ make docker-build TAGS="${PRIMARY_TAG}"
 make -C cmd/nodeport-proxy docker TAG="${PRIMARY_TAG}"
 make -C cmd/kubeletdnat-controller docker TAG="${PRIMARY_TAG}"
 make -C cmd/user-ssh-keys-agent docker TAG="${PRIMARY_TAG}"
+make -C cmd/tunneling-agent docker TAG="${PRIMARY_TAG}"
 docker build -t "${DOCKER_REPO}/addons:${PRIMARY_TAG}" addons
 docker build -t "${DOCKER_REPO}/openshift-addons:${PRIMARY_TAG}" openshift_addons
 docker build -t "${DOCKER_REPO}/etcd-launcher:${PRIMARY_TAG}" -f cmd/etcd-launcher/Dockerfile .
@@ -84,6 +85,7 @@ for TAG in "$@"; do
   docker tag "${DOCKER_REPO}/openshift-addons:${PRIMARY_TAG}"        "${DOCKER_REPO}/openshift-addons:${TAG}"
   docker tag "${DOCKER_REPO}/user-ssh-keys-agent:${PRIMARY_TAG}"     "${DOCKER_REPO}/user-ssh-keys-agent:${TAG}"
   docker tag "${DOCKER_REPO}/etcd-launcher:${PRIMARY_TAG}"           "${DOCKER_REPO}/etcd-launcher:${TAG}"
+  docker tag "${DOCKER_REPO}/tunneling-agent:${PRIMARY_TAG}"         "${DOCKER_REPO}/tunneling-agent:${TAG}"
 
   echodate "Pushing images"
   docker push "${DOCKER_REPO}/kubermatic${REPOSUFFIX}:${TAG}"
@@ -93,6 +95,7 @@ for TAG in "$@"; do
   docker push "${DOCKER_REPO}/openshift-addons:${TAG}"
   docker push "${DOCKER_REPO}/user-ssh-keys-agent:${TAG}"
   docker push "${DOCKER_REPO}/etcd-launcher:${TAG}"
+  docker push "${DOCKER_REPO}/tunneling-agent:${TAG}"
 
   if [ "$KUBERMATIC_EDITION" == "ee" ]; then
     docker tag "${DOCKER_REPO}/api:${PRIMARY_TAG}" "${DOCKER_REPO}/api:${TAG}"

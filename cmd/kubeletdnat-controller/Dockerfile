@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.10
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM gcr.io/distroless/static:nonroot
 LABEL maintainer="support@kubermatic.com"
+WORKDIR /
+COPY ./_build/tunneling-agent /tunneling-agent
+USER nonroot:nonroot
 
-RUN apk add -u iptables
-COPY ./_build/kubeletdnat-controller /usr/local/bin/kubeletdnat-controller
+ENTRYPOINT ["/tunneling-agent"]
+CMD ["genconf"]

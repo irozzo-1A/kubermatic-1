@@ -27,8 +27,7 @@ import (
 	"text/template"
 )
 
-var envoyConfigTemplate = `
-admin:
+var envoyConfigTemplate = `admin:
   access_log_path: /dev/stdout
   address:
     socket_address:
@@ -36,8 +35,8 @@ admin:
       address: 127.0.0.1
       port_value: {{.AdminPort}}
 static_resources:
-  listeners:
-{{range $i, $l := .Listeners -}}
+  listeners: {{if not .Listeners -}}[]{{- end}}
+{{- range $i, $l := .Listeners}}
   - name: listener_{{$i}}
     address:
       socket_address:
@@ -53,7 +52,7 @@ static_resources:
           cluster: "proxy_cluster"
           tunneling_config:
             hostname: {{$l.Authority}}
-{{end -}}
+{{- end}}
   clusters:
     - name: proxy_cluster
       connect_timeout: 5s
@@ -153,7 +152,7 @@ func (c *GenconfCommand) Flags() *flag.FlagSet {
 	genconfCmd.StringVar(&c.BindAddress, "bind-address", "0.0.0.0", "Bind address.")
 	genconfCmd.StringVar(&c.ProxyHost, "proxy-host", "", "Proxy host.")
 	genconfCmd.UintVar(&c.ProxyPort, "proxy-port", 0, "Proxy host.")
-	genconfCmd.Var(&c.Listeners, "listener", "Listener configuration, this flag can be repeated. The expected format is: <local-port>:<Authority>")
+	genconfCmd.Var(&c.Listeners, "listener", "Listener configuration, this flag can be repeated. The expected format is: <local-port>:<authority>")
 	genconfCmd.Var(&c.OutputWriter, "out", "Output file used to write the Envoy configuration, stdout is used if unpecified.")
 	return genconfCmd
 }
