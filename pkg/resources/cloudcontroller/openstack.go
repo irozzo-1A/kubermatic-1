@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	osName = "openstack-cloud-controller-manager"
+	OpenStackCCMName = "openstack-cloud-controller-manager"
 )
 
 var (
@@ -51,19 +51,19 @@ var (
 
 func openStackDeploymentCreator(data *resources.TemplateData) reconciling.NamedDeploymentCreatorGetter {
 	return func() (string, reconciling.DeploymentCreator) {
-		return osName, func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
-			dep.Name = osName
-			dep.Labels = resources.BaseAppLabels(osName, nil)
+		return OpenStackCCMName, func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
+			dep.Name = OpenStackCCMName
+			dep.Labels = resources.BaseAppLabels(OpenStackCCMName, nil)
 
 			dep.Spec.Replicas = resources.Int32(1)
 
 			dep.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: resources.BaseAppLabels(osName, nil),
+				MatchLabels: resources.BaseAppLabels(OpenStackCCMName, nil),
 			}
 
 			dep.Spec.Template.Spec.Volumes = getOSVolumes()
 
-			podLabels, err := data.GetPodTemplateLabels(osName, dep.Spec.Template.Spec.Volumes, nil)
+			podLabels, err := data.GetPodTemplateLabels(OpenStackCCMName, dep.Spec.Template.Spec.Volumes, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -108,7 +108,7 @@ func openStackDeploymentCreator(data *resources.TemplateData) reconciling.NamedD
 			dep.Spec.Template.Spec.Containers = []corev1.Container{
 				*openvpnSidecar,
 				{
-					Name:         osName,
+					Name:         OpenStackCCMName,
 					Image:        data.ImageRegistry(resources.RegistryDocker) + "/k8scloudprovider/openstack-cloud-controller-manager:v" + version,
 					Command:      []string{"/bin/openstack-cloud-controller-manager"},
 					Args:         flags,
@@ -116,7 +116,7 @@ func openStackDeploymentCreator(data *resources.TemplateData) reconciling.NamedD
 				},
 			}
 			defResourceRequirements := map[string]*corev1.ResourceRequirements{
-				osName:              osResourceRequirements.DeepCopy(),
+				OpenStackCCMName:    osResourceRequirements.DeepCopy(),
 				openvpnSidecar.Name: openvpnSidecar.Resources.DeepCopy(),
 			}
 			err = resources.SetResourceRequirements(dep.Spec.Template.Spec.Containers, defResourceRequirements, nil, dep.Annotations)

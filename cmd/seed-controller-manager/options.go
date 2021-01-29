@@ -31,6 +31,7 @@ import (
 	"k8c.io/kubermatic/v2/pkg/cluster/client"
 	"k8c.io/kubermatic/v2/pkg/controller/operator/common"
 	backupcontroller "k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/backup"
+	kubernetescontroller "k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/kubernetes"
 	kubermaticv1 "k8c.io/kubermatic/v2/pkg/crd/kubermatic/v1"
 	"k8c.io/kubermatic/v2/pkg/features"
 	"k8c.io/kubermatic/v2/pkg/provider"
@@ -280,6 +281,35 @@ type controllerContext struct {
 	dockerPullConfigJSON []byte
 	log                  *zap.SugaredLogger
 	versions             kubermatic.Versions
+}
+
+func (ctrlCtx controllerContext) getCusterReconcilerConfig() kubernetescontroller.ClusterReconcilerConfig {
+	return kubernetescontroller.ClusterReconcilerConfig{
+		OverwriteRegistry:                                ctrlCtx.runOptions.overwriteRegistry,
+		NodePortRange:                                    ctrlCtx.runOptions.nodePortRange,
+		NodeAccessNetwork:                                ctrlCtx.runOptions.nodeAccessNetwork,
+		EtcdDiskSize:                                     ctrlCtx.runOptions.etcdDiskSize,
+		MonitoringScrapeAnnotationPrefix:                 ctrlCtx.runOptions.monitoringScrapeAnnotationPrefix,
+		InClusterPrometheusRulesFile:                     ctrlCtx.runOptions.inClusterPrometheusRulesFile,
+		InClusterPrometheusDisableDefaultRules:           ctrlCtx.runOptions.inClusterPrometheusDisableDefaultRules,
+		InClusterPrometheusDisableDefaultScrapingConfigs: ctrlCtx.runOptions.inClusterPrometheusDisableDefaultScrapingConfigs,
+		InClusterPrometheusScrapingConfigsFile:           ctrlCtx.runOptions.inClusterPrometheusScrapingConfigsFile,
+		DockerPullConfigJSON:                             ctrlCtx.dockerPullConfigJSON,
+		NodeLocalDNSCacheEnabled:                         ctrlCtx.runOptions.nodeLocalDNSCacheEnabled(),
+		OidcCAFile:                                       ctrlCtx.runOptions.oidcCAFile,
+		OidcIssuerURL:                                    ctrlCtx.runOptions.oidcIssuerURL,
+		OidcIssuerClientID:                               ctrlCtx.runOptions.oidcIssuerClientID,
+		KubermaticImage:                                  ctrlCtx.runOptions.kubermaticImage,
+		EtcdLauncherImage:                                ctrlCtx.runOptions.etcdLauncherImage,
+		DnatControllerImage:                              ctrlCtx.runOptions.dnatControllerImage,
+		Features: kubernetescontroller.Features{
+			VPA:                          ctrlCtx.runOptions.featureGates.Enabled(features.VerticalPodAutoscaler),
+			EtcdDataCorruptionChecks:     ctrlCtx.runOptions.featureGates.Enabled(features.EtcdDataCorruptionChecks),
+			KubernetesOIDCAuthentication: ctrlCtx.runOptions.featureGates.Enabled(features.OpenIDAuthPlugin),
+			EtcdLauncher:                 ctrlCtx.runOptions.featureGates.Enabled(features.EtcdLauncher),
+		},
+		Versions: ctrlCtx.versions,
+	}
 }
 
 func loadAddons(listOpt, fileOpt string) (kubermaticv1.AddonList, error) {

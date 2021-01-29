@@ -203,8 +203,12 @@ const (
 
 	ClusterConditionEtcdClusterInitialized ClusterConditionType = "EtcdClusterInitialized"
 
-	ReasonClusterUpdateSuccessful = "ClusterUpdateSuccessful"
-	ReasonClusterUpdateInProgress = "ClusterUpdateInProgress"
+	ClusterConditionCCMMigrationCompleted ClusterConditionType = "CCMMigrationCompleted"
+
+	ReasonClusterUpdateSuccessful       = "ClusterUpdateSuccessful"
+	ReasonClusterUpdateInProgress       = "ClusterUpdateInProgress"
+	ReasonClusterCCMMigrationSuccesfull = "ClusterCCMMigrationSuccessful"
+	ReasonClusterCCMMigrationInProgress = "ClusterCCMMigrationInProgress"
 )
 
 var AllClusterConditionTypes = []ClusterConditionType{

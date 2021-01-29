@@ -70,37 +70,41 @@ type Features struct {
 // Reconciler is a controller which is responsible for managing clusters
 type Reconciler struct {
 	ctrlruntimeclient.Client
+	ClusterReconcilerConfig
 	log                     *zap.SugaredLogger
 	userClusterConnProvider userClusterConnectionProvider
 	workerName              string
+
+	concurrentClusterUpdates int
 
 	externalURL string
 	seedGetter  provider.SeedGetter
 
 	recorder record.EventRecorder
+}
 
-	overwriteRegistry                                string
-	nodePortRange                                    string
-	nodeAccessNetwork                                string
-	etcdDiskSize                                     resource.Quantity
-	inClusterPrometheusRulesFile                     string
-	inClusterPrometheusDisableDefaultRules           bool
-	inClusterPrometheusDisableDefaultScrapingConfigs bool
-	inClusterPrometheusScrapingConfigsFile           string
-	monitoringScrapeAnnotationPrefix                 string
-	dockerPullConfigJSON                             []byte
-	nodeLocalDNSCacheEnabled                         bool
-	kubermaticImage                                  string
-	etcdLauncherImage                                string
-	dnatControllerImage                              string
-	concurrentClusterUpdates                         int
+type ClusterReconcilerConfig struct {
+	OverwriteRegistry                                string
+	NodePortRange                                    string
+	NodeAccessNetwork                                string
+	EtcdDiskSize                                     resource.Quantity
+	InClusterPrometheusRulesFile                     string
+	InClusterPrometheusDisableDefaultRules           bool
+	InClusterPrometheusDisableDefaultScrapingConfigs bool
+	InClusterPrometheusScrapingConfigsFile           string
+	MonitoringScrapeAnnotationPrefix                 string
+	DockerPullConfigJSON                             []byte
+	NodeLocalDNSCacheEnabled                         bool
+	KubermaticImage                                  string
+	EtcdLauncherImage                                string
+	DnatControllerImage                              string
 
-	oidcCAFile         string
-	oidcIssuerURL      string
-	oidcIssuerClientID string
+	OidcCAFile         string
+	OidcIssuerURL      string
+	OidcIssuerClientID string
 
-	features Features
-	versions kubermatic.Versions
+	Features Features
+	Versions kubermatic.Versions
 }
 
 // NewController creates a cluster controller.
@@ -112,61 +116,21 @@ func Add(
 	externalURL string,
 	seedGetter provider.SeedGetter,
 	userClusterConnProvider userClusterConnectionProvider,
-	overwriteRegistry string,
-	nodePortRange string,
-	nodeAccessNetwork string,
-	etcdDiskSize resource.Quantity,
-	monitoringScrapeAnnotationPrefix string,
-	inClusterPrometheusRulesFile string,
-	inClusterPrometheusDisableDefaultRules bool,
-	inClusterPrometheusDisableDefaultScrapingConfigs bool,
-	inClusterPrometheusScrapingConfigsFile string,
-	dockerPullConfigJSON []byte,
-	nodeLocalDNSCacheEnabled bool,
 	concurrentClusterUpdates int,
-
-	oidcCAFile string,
-	oidcIssuerURL string,
-	oidcIssuerClientID string,
-	kubermaticImage string,
-	etcdLauncherImage string,
-	dnatControllerImage string,
-	features Features,
-	versions kubermatic.Versions) error {
+	config ClusterReconcilerConfig) error {
 
 	reconciler := &Reconciler{
-		log:                     log.Named(ControllerName),
-		Client:                  mgr.GetClient(),
-		userClusterConnProvider: userClusterConnProvider,
-		workerName:              workerName,
+		log:                      log.Named(ControllerName),
+		Client:                   mgr.GetClient(),
+		ClusterReconcilerConfig:  config,
+		concurrentClusterUpdates: concurrentClusterUpdates,
+		userClusterConnProvider:  userClusterConnProvider,
+		workerName:               workerName,
 
 		recorder: mgr.GetEventRecorderFor(ControllerName),
 
-		overwriteRegistry:                      overwriteRegistry,
-		nodePortRange:                          nodePortRange,
-		nodeAccessNetwork:                      nodeAccessNetwork,
-		etcdDiskSize:                           etcdDiskSize,
-		inClusterPrometheusRulesFile:           inClusterPrometheusRulesFile,
-		inClusterPrometheusDisableDefaultRules: inClusterPrometheusDisableDefaultRules,
-		inClusterPrometheusDisableDefaultScrapingConfigs: inClusterPrometheusDisableDefaultScrapingConfigs,
-		inClusterPrometheusScrapingConfigsFile:           inClusterPrometheusScrapingConfigsFile,
-		monitoringScrapeAnnotationPrefix:                 monitoringScrapeAnnotationPrefix,
-		dockerPullConfigJSON:                             dockerPullConfigJSON,
-		nodeLocalDNSCacheEnabled:                         nodeLocalDNSCacheEnabled,
-		kubermaticImage:                                  kubermaticImage,
-		etcdLauncherImage:                                etcdLauncherImage,
-		dnatControllerImage:                              dnatControllerImage,
-		concurrentClusterUpdates:                         concurrentClusterUpdates,
-
 		externalURL: externalURL,
 		seedGetter:  seedGetter,
-
-		oidcCAFile:         oidcCAFile,
-		oidcIssuerURL:      oidcIssuerURL,
-		oidcIssuerClientID: oidcIssuerClientID,
-
-		features: features,
-		versions: versions,
 	}
 
 	c, err := controller.New(ControllerName, mgr, controller.Options{Reconciler: reconciler, MaxConcurrentReconciles: numWorkers})
@@ -219,13 +183,20 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 		return reconcile.Result{}, nil
 	}
 
+	// The annotation will be added by the Cluster MutatingWebhook when
+	// migration is detected.
+	if _, ok := cluster.Annotations[CCMMigrationNeededAnnotation]; ok {
+		log.Debug("Skipping because CCM migration is in progress")
+		return reconcile.Result{}, nil
+	}
+
 	// Add a wrapping here so we can emit an event on error
 	result, err := kubermaticv1helper.ClusterReconcileWrapper(
 		ctx,
 		r.Client,
 		r.workerName,
 		cluster,
-		r.versions,
+		r.Versions,
 		kubermaticv1.ClusterConditionClusterControllerReconcilingSuccess,
 		func() (*reconcile.Result, error) {
 			// only reconcile this cluster if there are not yet too many updates running

@@ -26,6 +26,7 @@ import (
 	"k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/addoninstaller"
 	backupcontroller "k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/backup"
 	cloudcontroller "k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/cloud"
+	"k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/cloudprovidermigration"
 	"k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/clustercomponentdefaulter"
 	constrainttemplatecontroller "k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/constraint-template-controller"
 	"k8c.io/kubermatic/v2/pkg/controller/seed-controller-manager/initialmachinedeployment"
@@ -63,6 +64,7 @@ var AllControllers = map[string]controllerCreator{
 	pvwatcher.ControllerName:                      createPvWatcherController,
 	constrainttemplatecontroller.ControllerName:   createConstraintTemplateController,
 	initialmachinedeployment.ControllerName:       createInitialMachineDeploymentController,
+	cloudprovidermigration.ControllerName:         createCloudProviderMigrationController,
 }
 
 type controllerCreator func(*controllerContext) error
@@ -159,31 +161,17 @@ func createKubernetesController(ctrlCtx *controllerContext) error {
 		ctrlCtx.runOptions.externalURL,
 		ctrlCtx.seedGetter,
 		ctrlCtx.clientProvider,
-		ctrlCtx.runOptions.overwriteRegistry,
-		ctrlCtx.runOptions.nodePortRange,
-		ctrlCtx.runOptions.nodeAccessNetwork,
-		ctrlCtx.runOptions.etcdDiskSize,
-		ctrlCtx.runOptions.monitoringScrapeAnnotationPrefix,
-		ctrlCtx.runOptions.inClusterPrometheusRulesFile,
-		ctrlCtx.runOptions.inClusterPrometheusDisableDefaultRules,
-		ctrlCtx.runOptions.inClusterPrometheusDisableDefaultScrapingConfigs,
-		ctrlCtx.runOptions.inClusterPrometheusScrapingConfigsFile,
-		ctrlCtx.dockerPullConfigJSON,
-		ctrlCtx.runOptions.nodeLocalDNSCacheEnabled(),
 		ctrlCtx.runOptions.concurrentClusterUpdate,
-		ctrlCtx.runOptions.oidcCAFile,
-		ctrlCtx.runOptions.oidcIssuerURL,
-		ctrlCtx.runOptions.oidcIssuerClientID,
-		ctrlCtx.runOptions.kubermaticImage,
-		ctrlCtx.runOptions.etcdLauncherImage,
-		ctrlCtx.runOptions.dnatControllerImage,
-		kubernetescontroller.Features{
-			VPA:                          ctrlCtx.runOptions.featureGates.Enabled(features.VerticalPodAutoscaler),
-			EtcdDataCorruptionChecks:     ctrlCtx.runOptions.featureGates.Enabled(features.EtcdDataCorruptionChecks),
-			KubernetesOIDCAuthentication: ctrlCtx.runOptions.featureGates.Enabled(features.OpenIDAuthPlugin),
-			EtcdLauncher:                 ctrlCtx.runOptions.featureGates.Enabled(features.EtcdLauncher),
-		},
-		ctrlCtx.versions,
+		ctrlCtx.getCusterReconcilerConfig(),
+	)
+}
+
+func createCloudProviderMigrationController(ctrlCtx *controllerContext) error {
+	return cloudprovidermigration.Add(
+		ctrlCtx.mgr,
+		ctrlCtx.log,
+		ctrlCtx.runOptions.workerCount,
+		ctrlCtx.getCusterReconcilerConfig(),
 	)
 }
 

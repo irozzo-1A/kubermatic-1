@@ -45,6 +45,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (r *Reconciler) ensureResourcesAreDeployed(ctx context.Context, cluster *kubermaticv1.Cluster) error {
@@ -143,40 +144,44 @@ func (r *Reconciler) ensureResourcesAreDeployed(ctx context.Context, cluster *ku
 }
 
 func (r *Reconciler) getClusterTemplateData(ctx context.Context, cluster *kubermaticv1.Cluster, seed *kubermaticv1.Seed) (*resources.TemplateData, error) {
+	return r.ClusterReconcilerConfig.GetClusterTemplateData(ctx, r.Client, cluster, seed)
+}
+
+func (c *ClusterReconcilerConfig) GetClusterTemplateData(ctx context.Context, client ctrlruntimeclient.Client, cluster *kubermaticv1.Cluster, seed *kubermaticv1.Seed) (*resources.TemplateData, error) {
 	datacenter, found := seed.Spec.Datacenters[cluster.Spec.Cloud.DatacenterName]
 	if !found {
 		return nil, fmt.Errorf("failed to get datacenter %s", cluster.Spec.Cloud.DatacenterName)
 	}
 
-	supportsFailureDomainZoneAntiAffinity, err := resources.SupportsFailureDomainZoneAntiAffinity(ctx, r.Client)
+	supportsFailureDomainZoneAntiAffinity, err := resources.SupportsFailureDomainZoneAntiAffinity(ctx, client)
 	if err != nil {
 		return nil, err
 	}
 
 	return resources.NewTemplateData(
 		ctx,
-		r,
+		client,
 		cluster,
 		&datacenter,
 		seed.DeepCopy(),
-		r.overwriteRegistry,
-		r.nodePortRange,
-		r.nodeAccessNetwork,
-		r.etcdDiskSize,
-		r.monitoringScrapeAnnotationPrefix,
-		r.inClusterPrometheusRulesFile,
-		r.inClusterPrometheusDisableDefaultRules,
-		r.inClusterPrometheusDisableDefaultScrapingConfigs,
-		r.inClusterPrometheusScrapingConfigsFile,
-		r.oidcCAFile,
-		r.oidcIssuerURL,
-		r.oidcIssuerClientID,
-		r.nodeLocalDNSCacheEnabled,
-		r.kubermaticImage,
-		r.etcdLauncherImage,
-		r.dnatControllerImage,
+		c.OverwriteRegistry,
+		c.NodePortRange,
+		c.NodeAccessNetwork,
+		c.EtcdDiskSize,
+		c.MonitoringScrapeAnnotationPrefix,
+		c.InClusterPrometheusRulesFile,
+		c.InClusterPrometheusDisableDefaultRules,
+		c.InClusterPrometheusDisableDefaultScrapingConfigs,
+		c.InClusterPrometheusScrapingConfigsFile,
+		c.OidcCAFile,
+		c.OidcIssuerURL,
+		c.OidcIssuerClientID,
+		c.NodeLocalDNSCacheEnabled,
+		c.KubermaticImage,
+		c.EtcdLauncherImage,
+		c.DnatControllerImage,
 		supportsFailureDomainZoneAntiAffinity,
-		r.versions,
+		c.Versions,
 	), nil
 }
 
@@ -267,7 +272,7 @@ func GetDeploymentCreators(data *resources.TemplateData, enableAPIserverOIDCAuth
 }
 
 func (r *Reconciler) ensureDeployments(ctx context.Context, cluster *kubermaticv1.Cluster, data *resources.TemplateData) error {
-	creators := GetDeploymentCreators(data, r.features.KubernetesOIDCAuthentication)
+	creators := GetDeploymentCreators(data, r.Features.KubernetesOIDCAuthentication)
 	return reconciling.ReconcileDeployments(ctx, creators, cluster.Status.NamespaceName, r, reconciling.OwnerRefWrapper(resources.GetClusterRef(cluster)))
 }
 
@@ -277,7 +282,7 @@ func (r *Reconciler) GetSecretCreators(data *resources.TemplateData) []reconcili
 		certificates.RootCACreator(data),
 		openvpn.CACreator(),
 		certificates.FrontProxyCACreator(),
-		resources.ImagePullSecretCreator(r.dockerPullConfigJSON),
+		resources.ImagePullSecretCreator(r.DockerPullConfigJSON),
 		apiserver.FrontProxyClientCertificateCreator(data),
 		etcd.TLSCertificateCreator(data),
 		apiserver.EtcdClientCertificateCreator(data),
@@ -470,7 +475,7 @@ func (r *Reconciler) ensureVerticalPodAutoscalers(ctx context.Context, c *kuberm
 		resources.MetricsServerDeploymentName,
 	}
 
-	creators, err := resources.GetVerticalPodAutoscalersForAll(ctx, r.Client, controlPlaneDeploymentNames, []string{resources.EtcdStatefulSetName}, c.Status.NamespaceName, r.features.VPA)
+	creators, err := resources.GetVerticalPodAutoscalersForAll(ctx, r.Client, controlPlaneDeploymentNames, []string{resources.EtcdStatefulSetName}, c.Status.NamespaceName, r.Features.VPA)
 	if err != nil {
 		return fmt.Errorf("failed to create the functions to handle VPA resources: %v", err)
 	}
@@ -479,7 +484,7 @@ func (r *Reconciler) ensureVerticalPodAutoscalers(ctx context.Context, c *kuberm
 }
 
 func (r *Reconciler) ensureStatefulSets(ctx context.Context, c *kubermaticv1.Cluster, data *resources.TemplateData) error {
-	creators := GetStatefulSetCreators(data, r.features.EtcdDataCorruptionChecks)
+	creators := GetStatefulSetCreators(data, r.Features.EtcdDataCorruptionChecks)
 
 	return reconciling.ReconcileStatefulSets(ctx, creators, c.Status.NamespaceName, r.Client, reconciling.OwnerRefWrapper(resources.GetClusterRef(c)))
 }

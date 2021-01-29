@@ -122,7 +122,7 @@ func (r *Reconciler) ensureClusterNetworkDefaults(ctx context.Context, cluster *
 // ensureEtcdLauncherFeatureFlag will apply seed controller etcdLauncher setting on the cluster level
 func (r *Reconciler) ensureEtcdLauncherFeatureFlag(ctx context.Context, cluster *kubermaticv1.Cluster) error {
 	return r.updateCluster(ctx, cluster, func(c *kubermaticv1.Cluster) {
-		if r.features.EtcdLauncher { // enabled at the controller level
+		if r.Features.EtcdLauncher { // enabled at the controller level
 			// we only modify the cluster feature flag if it's not explicitly set, regardless of the value
 			if _, set := c.Spec.Features[kubermaticv1.ClusterFeatureEtcdLauncher]; !set {
 				if c.Spec.Features == nil {
