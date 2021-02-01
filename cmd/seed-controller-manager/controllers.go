@@ -171,6 +171,7 @@ func createCloudProviderMigrationController(ctrlCtx *controllerContext) error {
 		ctrlCtx.mgr,
 		ctrlCtx.log,
 		ctrlCtx.runOptions.workerCount,
+		ctrlCtx.seedGetter,
 		ctrlCtx.getCusterReconcilerConfig(),
 	)
 }

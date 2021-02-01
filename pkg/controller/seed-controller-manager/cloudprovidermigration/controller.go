@@ -70,10 +70,12 @@ func Add(
 	mgr manager.Manager,
 	log *zap.SugaredLogger,
 	numWorkers int,
+	seedGetter provider.SeedGetter,
 	config kubernetes.ClusterReconcilerConfig) error {
 
 	reconciler := &Reconciler{
 		log:                     log.Named(ControllerName),
+		seedGetter:              seedGetter,
 		Client:                  mgr.GetClient(),
 		ClusterReconcilerConfig: config,
 	}
@@ -112,39 +114,44 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 		return reconcile.Result{}, err
 	}
 	//kasDeploymentName, kasCreator := apiserver.DeploymentCreator(td, r.Features.KubernetesOIDCAuthentication)()
-	cmDeploymentName, cmCreator := controllermanager.DeploymentCreator(td)()
+	cmDeploymentName, cmCreator := controllermanager.DeploymentCreator(td, "*", "tokencleaner", "-cloud-node-lifecycle", "-route", "-service")()
 	ccmDeploymentName, ccmCreator := cloudcontroller.DeploymentCreator(td)()
 	mcDeploymentName, mcCreator := machinecontroller.DeploymentCreator(td)()
+	ccmKubeconfigSecreteName, ccmKubeconfigCreator := resources.GetInternalKubeconfigCreator(resources.CloudControllerManagerKubeconfigSecretName, resources.CloudControllerManagerCertUsername, nil, td)()
+	// Define resource graph
 	if graph, err := reconciling.NewTasksGraphBuilder().
+		AddTask("apply-ccm-kubeconfig", reconciling.ReconcileSecretTaskFn(ccmKubeconfigCreator, ccmKubeconfigSecreteName, cluster.Status.NamespaceName)).
 		// Deactivate cloud-controllers in KCM deployment.
 		AddTask("deactivate-cloud-controllers",
-			reconciling.ReconcileDeploymentTaskFn(cmCreator, cmDeploymentName, cluster.Namespace, deactivateCloudContollersModifier)).
+			reconciling.ReconcileDeploymentTaskFn(cmCreator, cmDeploymentName, cluster.Status.NamespaceName)).
 		// Deploy the MC to set provider to external.
 		AddTask("update-kubelet-parameters",
-			reconciling.ReconcileDeploymentTaskFn(mcCreator, mcDeploymentName, cluster.Namespace)).
+			reconciling.ReconcileDeploymentTaskFn(mcCreator, mcDeploymentName, cluster.Status.NamespaceName)).
 		// Wait for KCM to rollout.
 		AddTask("wait-for-cloud-controllers-deactivated",
-			waitForDeploymentComplete(cmDeploymentName, cluster.Namespace, 10*time.Second),
+			waitForDeploymentComplete(cmDeploymentName, cluster.Status.NamespaceName, 10*time.Second),
 			"deactivate-cloud-controllers").
 		// Wait for KCM to rollout.
 		AddTask("wait-for-mc-ready",
-			waitForDeploymentComplete(mcDeploymentName, cluster.Namespace, 10*time.Second),
+			waitForDeploymentComplete(mcDeploymentName, cluster.Status.NamespaceName, 10*time.Second),
 			"update-kubelet-parameters").
 		// Deploy the CCM with cloud-node controller deactivated because not
 		// kubelet flags have not been deactivated yet in machine-controller.
 		AddTask("deploy-ccm",
-			reconciling.ReconcileDeploymentTaskFn(ccmCreator, ccmDeploymentName, cluster.Namespace),
+			reconciling.ReconcileDeploymentTaskFn(ccmCreator, ccmDeploymentName, cluster.Status.NamespaceName),
+			"apply-ccm-kubeconfig",
 			"wait-for-cloud-controllers-deactivated",
 			"wait-for-mc-ready").
 		AddTask("wait-for-ccm-ready",
-			waitForDeploymentComplete(ccmDeploymentName, cluster.Namespace, 10*time.Second),
+			waitForDeploymentComplete(ccmDeploymentName, cluster.Status.NamespaceName, 10*time.Second),
 			"deploy-ccm").
 		AddTask("update-cluster",
 			func(ctx context.Context, cli ctrlruntimeclient.Client) error {
 				return updateCluster(ctx, cli, cluster, r.success)
 			},
 			"wait-for-ccm-ready",
-		).Build(); err != nil { // TODO(iacopo): Add BuildOrDie() there is nothing we can do at runtime in case the described graph has loops or miss some dependencies apart from panic-ing.
+		).Build(); err == nil { // TODO(iacopo): Add BuildOrDie() there is nothing we can do at runtime in case the described graph has loops or miss some dependencies apart from panic-ing.
+		log.Debugw("Running task graph", "graph", graph)
 		if s := reconciling.RunTasks(ctx, r.Client, graph, &LoggingTaskEventHandler{Log: r.log}); len(s.Failed()) > 0 {
 			// TODO(iacopo) it would be possible to extend the task library to
 			// have tasks that are run on failure of other tasks, to avoid the
@@ -152,7 +159,11 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 			updateCluster(ctx, r.Client, cluster, r.failure)
 			// retry if some of the tasks failed.
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		} else {
+			log.Debugw("some tasks failed", "result", s)
 		}
+	} else {
+		panic(err)
 	}
 
 	return reconcile.Result{}, nil
@@ -181,7 +192,7 @@ func (l *LoggingTaskEventHandler) OnError(id reconciling.TaskID, err error) {
 }
 
 func (r *Reconciler) success(cluster *kubermaticv1.Cluster) {
-	delete(cluster.Annotations, kubernetes.CCMMigrationNeededAnnotation)
+	//delete(cluster.Annotations, kubernetes.CCMMigrationNeededAnnotation)
 	kubermaticv1helper.SetClusterCondition(cluster, r.Versions, kubermaticv1.ClusterConditionCCMMigrationCompleted, corev1.ConditionTrue, kubermaticv1.ReasonClusterCCMMigrationSuccesfull, "CCM migration completed successfully")
 }
 
@@ -237,7 +248,7 @@ func containerFlagModifier(rawcreate reconciling.ObjectCreator, containerName, f
 
 func waitForDeploymentComplete(name, namespace string, maxWait time.Duration) reconciling.TaskFn {
 	return func(ctx context.Context, client ctrlruntimeclient.Client) error {
-		wait.PollImmediate(10*time.Second, maxWait, func() (bool, error) {
+		wait.PollImmediate(1*time.Second, maxWait, func() (bool, error) {
 			deployment := appsv1.Deployment{}
 			if err := client.Get(ctx, ctrlruntimeclient.ObjectKey{Name: name, Namespace: namespace}, &deployment); err != nil {
 				//TODO(irozzo): swallowing error at the moment, handle this

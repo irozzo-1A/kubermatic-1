@@ -54,13 +54,17 @@ const (
 )
 
 // DeploymentCreator returns the function to create and update the controller manager deployment
-func DeploymentCreator(data *resources.TemplateData) reconciling.NamedDeploymentCreatorGetter {
+func DeploymentCreator(data *resources.TemplateData, controllers ...string) reconciling.NamedDeploymentCreatorGetter {
 	return func() (string, reconciling.DeploymentCreator) {
 		return resources.ControllerManagerDeploymentName, func(dep *appsv1.Deployment) (*appsv1.Deployment, error) {
 			dep.Name = resources.ControllerManagerDeploymentName
 			dep.Labels = resources.BaseAppLabels(name, nil)
 
-			flags, err := getFlags(data)
+			// if controllers not given set default.
+			if len(controllers) == 0 {
+				controllers = append(controllers, "*", "bootstrapsigner", "tokencleaner")
+			}
+			flags, err := getFlags(data, controllers)
 			if err != nil {
 				return nil, err
 			}
@@ -200,7 +204,8 @@ func DeploymentCreator(data *resources.TemplateData) reconciling.NamedDeployment
 	}
 }
 
-func getFlags(data *resources.TemplateData) ([]string, error) {
+func getFlags(data *resources.TemplateData, controllers []string) ([]string, error) {
+	controllersStr := strings.Join(controllers, ",")
 	flags := []string{
 		"--kubeconfig", "/etc/kubernetes/kubeconfig/kubeconfig",
 		"--service-account-private-key-file", "/etc/kubernetes/service-account-key/sa.key",
@@ -209,7 +214,7 @@ func getFlags(data *resources.TemplateData) ([]string, error) {
 		"--cluster-signing-key-file", "/etc/kubernetes/pki/ca/ca.key",
 		"--cluster-cidr", data.Cluster().Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 		"--allocate-node-cidrs",
-		"--controllers", "*,bootstrapsigner,tokencleaner",
+		"--controllers", controllersStr,
 		"--use-service-account-credentials",
 	}
 

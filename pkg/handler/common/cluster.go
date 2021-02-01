@@ -35,7 +35,7 @@ import (
 	kubermaticlog "k8c.io/kubermatic/v2/pkg/log"
 	"k8c.io/kubermatic/v2/pkg/provider"
 	kubernetesprovider "k8c.io/kubermatic/v2/pkg/provider/kubernetes"
-	"k8c.io/kubermatic/v2/pkg/resources/cloudcontroller"
+	//"k8c.io/kubermatic/v2/pkg/resources/cloudcontroller"
 	"k8c.io/kubermatic/v2/pkg/resources/cluster"
 	"k8c.io/kubermatic/v2/pkg/util/errors"
 	"k8c.io/kubermatic/v2/pkg/validation"
@@ -187,9 +187,11 @@ func CreateEndpoint(ctx context.Context, projectID string, body apiv1.CreateClus
 	// Generate the name here so that it can be used in the secretName below.
 	partialCluster.Name = rand.String(10)
 
-	if cloudcontroller.ExternalCloudControllerFeatureSupported(dc, partialCluster) {
-		partialCluster.Spec.Features = map[string]bool{kubermaticv1.ClusterFeatureExternalCloudProvider: true}
-	}
+	// TODO(irozzo): commented out to be able to create cluster in openstack
+	// without external CCM
+	//if cloudcontroller.ExternalCloudControllerFeatureSupported(dc, partialCluster) {
+	//	partialCluster.Spec.Features = map[string]bool{kubermaticv1.ClusterFeatureExternalCloudProvider: true}
+	//}
 
 	if err := kubernetesprovider.CreateOrUpdateCredentialSecretForCluster(ctx, privilegedClusterProvider.GetSeedClusterAdminRuntimeClient(), partialCluster); err != nil {
 		return nil, err
